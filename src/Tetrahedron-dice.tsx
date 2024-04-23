@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Mesh, Vector3, Euler, Quaternion } from 'three';
 import { Text } from '@react-three/drei';
+import { GridHelper } from 'three';
 
 interface TextProps {
     position: [number, number, number];
@@ -71,18 +72,26 @@ const TetrahedronDice: React.FC<TetrahedronProps> = ({ position }) => {
                     normal.negate(); // Reverse the direction if it's pointing inward
                 }
 
-                const offsetPosition = faceCenter.add(normal.multiplyScalar(0.1)); // Adjust scalar for better visibility
+                const offsetPosition = faceCenter.add(normal.multiplyScalar(0.01)); // Adjust scalar for better visibility
                 const position: [number, number, number] = [
                     offsetPosition.x,
                     offsetPosition.y,
                     offsetPosition.z,
                 ];
-                const quaternion = new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), normal);
+
+                // Calculate direction from centroid to offsetPosition
+                const directionFromCentroid = new Vector3().subVectors(offsetPosition, centroid).normalize();
+
+                // Create a quaternion that aligns the z-axis to this direction
+                const quaternion = new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), directionFromCentroid);
+
+                // Use the quaternion to create an Euler rotation
+                const rotation = new Euler().setFromQuaternion(quaternion);
 
                 return {
                     position,
                     rotation: new Euler().setFromQuaternion(quaternion),
-                    text: `Face ${index + 1}`
+                    text: `${index + 1}`
                 };
             });
 
@@ -95,13 +104,23 @@ const TetrahedronDice: React.FC<TetrahedronProps> = ({ position }) => {
             <tetrahedronGeometry args={[1, 0]} />
             <meshStandardMaterial color='orange' />
             {texts.map((textProps, index) => (
+                <>
+                <TetrahedronText
+                    key={`text-${index}`}
+                    position={textProps.position}
+                    rotation={textProps.rotation}
+                    text={textProps.text}
+                />
                 <mesh
-                key={`sphere-${index}`}
-                position={textProps.position}
-            >
-                <sphereGeometry args={[0.05, 16, 16]} />
-                <meshStandardMaterial color="blue" />
-            </mesh>
+                    key={`sphere-${index}`}
+                    position={textProps.position}
+                    rotation={textProps.rotation}
+                >
+                    <sphereGeometry args={[0.05, 16, 16]} />
+                    <meshStandardMaterial color="blue" />
+                    <gridHelper args={[1, 10]} />
+                </mesh>
+                </>
             ))}
         </mesh>
     );
