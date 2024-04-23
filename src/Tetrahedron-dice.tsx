@@ -5,15 +5,15 @@ import { GridHelper } from 'three';
 
 interface TextProps {
     position: [number, number, number];
-    rotation: Euler;
+    quaternion: Quaternion;
     text: string;
 }
 
-const TetrahedronText: React.FC<TextProps> = ({ position, rotation, text }) => {
+const TetrahedronText: React.FC<TextProps> = ({ position, quaternion, text }) => {
     return (
         <Text
             position={position}
-            rotation={rotation}
+            quaternion={quaternion}
             fontSize={0.3}
             color="black"
             anchorX="center"
@@ -30,7 +30,7 @@ interface TetrahedronProps {
 
 const TetrahedronDice: React.FC<TetrahedronProps> = ({ position }) => {
     const meshRef = useRef<Mesh>(null);
-    const [texts, setTexts] = useState<Array<{ position: [number, number, number], rotation: Euler, text: string }>>([]);
+    const [texts, setTexts] = useState<Array<{ position: [number, number, number], quaternion: Quaternion, text: string }>>([]);
 
     useEffect(() => {
         if (meshRef.current) {
@@ -49,11 +49,12 @@ const TetrahedronDice: React.FC<TetrahedronProps> = ({ position }) => {
                 (vertices[0].z + vertices[1].z + vertices[2].z + vertices[3].z) / 4,
             );
 
+            // This configuration will have 1,2,3 on the same orientation
             const facesConfig = [
                 [vertices[0], vertices[1], vertices[2]], // Face 1
                 [vertices[0], vertices[1], vertices[3]], // Face 2
-                [vertices[1], vertices[2], vertices[3]], // Face 3
-                [vertices[0], vertices[2], vertices[3]]  // Face 4
+                [vertices[0], vertices[2], vertices[3]], // Face 3
+                [vertices[1], vertices[2], vertices[3]], // Face 4
             ];
 
             const newTexts = facesConfig.map((face, index) => {
@@ -80,17 +81,27 @@ const TetrahedronDice: React.FC<TetrahedronProps> = ({ position }) => {
                 ];
 
                 // Calculate direction from centroid to offsetPosition
-                const directionFromCentroid = new Vector3().subVectors(offsetPosition, centroid).normalize();
+                const directionFromCentroid = new Vector3().subVectors(faceCenter, centroid).normalize();
 
                 // Create a quaternion that aligns the z-axis to this direction
-                const quaternion = new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), directionFromCentroid);
+                const quaternionZ = new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), directionFromCentroid);
 
-                // Use the quaternion to create an Euler rotation
-                const rotation = new Euler().setFromQuaternion(quaternion);
+                // Create a quaternion that rotates the y-axis to the normal of the face
+                const vectorY = new Vector3(0, 1, 0);
+                vectorY.applyQuaternion(quaternionZ); // Rotate the y-axis to the face's normal
+
+                // Calulate direction to vertex 1
+                const directionToVertex1 = new Vector3().subVectors(face[0], faceCenter).normalize();
+
+                // Create a quaternion that aligns the y-axis to the direction to vertex 1
+                const quaternionY = new Quaternion().setFromUnitVectors(vectorY, directionToVertex1);
+
+                // Combine the two quaternions, first rotate around y-axis, then around z-axis
+                quaternionY.multiply(quaternionZ);
 
                 return {
                     position,
-                    rotation: new Euler().setFromQuaternion(quaternion),
+                    quaternion: quaternionY,
                     text: `${index + 1}`
                 };
             });
@@ -108,17 +119,17 @@ const TetrahedronDice: React.FC<TetrahedronProps> = ({ position }) => {
                 <TetrahedronText
                     key={`text-${index}`}
                     position={textProps.position}
-                    rotation={textProps.rotation}
+                    quaternion={textProps.quaternion}
                     text={textProps.text}
                 />
                 <mesh
                     key={`sphere-${index}`}
                     position={textProps.position}
-                    rotation={textProps.rotation}
+                    quaternion={textProps.quaternion}
                 >
                     <sphereGeometry args={[0.05, 16, 16]} />
                     <meshStandardMaterial color="blue" />
-                    <gridHelper args={[1, 10]} />
+                    <axesHelper args={[3]} />
                 </mesh>
                 </>
             ))}

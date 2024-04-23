@@ -2,6 +2,10 @@
   "name": "react-3d-dice",
   "version": "0.1.0",
   "private": true,
+<<<<<<< HEAD
+=======
+  "type": "module",
+>>>>>>> 0516de01c7adff682136a9ae5b464e78b6799d96
   "homepage": "https://jimzijun.github.io/react-3d-dice",
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.12",
@@ -27,6 +31,10 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+<<<<<<< HEAD
+=======
+    "predeploy": "npm run build",
+>>>>>>> 0516de01c7adff682136a9ae5b464e78b6799d96
     "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
