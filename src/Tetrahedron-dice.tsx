@@ -49,11 +49,12 @@ const TetrahedronDice: React.FC<TetrahedronProps> = ({ position }) => {
                 (vertices[0].z + vertices[1].z + vertices[2].z + vertices[3].z) / 4,
             );
 
+            // This configuration will have 1,2,3 on the same orientation
             const facesConfig = [
                 [vertices[0], vertices[1], vertices[2]], // Face 1
                 [vertices[0], vertices[1], vertices[3]], // Face 2
-                [vertices[1], vertices[2], vertices[3]], // Face 3
-                [vertices[0], vertices[2], vertices[3]]  // Face 4
+                [vertices[0], vertices[2], vertices[3]], // Face 3
+                [vertices[1], vertices[2], vertices[3]], // Face 4
             ];
 
             const newTexts = facesConfig.map((face, index) => {
@@ -87,20 +88,20 @@ const TetrahedronDice: React.FC<TetrahedronProps> = ({ position }) => {
 
                 // Create a quaternion that rotates the y-axis to the normal of the face
                 const vectorY = new Vector3(0, 1, 0);
-                vectorY.applyQuaternion(quaternionZ); // Rotate the y-axis to the direction of the face
+                vectorY.applyQuaternion(quaternionZ); // Rotate the y-axis to the face's normal
 
                 // Calulate direction to vertex 1
-                const directionToVertex1 = new Vector3().subVectors(face[2], faceCenter).normalize();
+                const directionToVertex1 = new Vector3().subVectors(face[0], faceCenter).normalize();
 
                 // Create a quaternion that aligns the y-axis to the direction to vertex 1
                 const quaternionY = new Quaternion().setFromUnitVectors(vectorY, directionToVertex1);
 
-                // Combine the two quaternions
-                quaternionZ.multiply(quaternionY);
+                // Combine the two quaternions, first rotate around y-axis, then around z-axis
+                quaternionY.multiply(quaternionZ);
 
                 return {
                     position,
-                    quaternion: quaternionZ,
+                    quaternion: quaternionY,
                     text: `${index + 1}`
                 };
             });
